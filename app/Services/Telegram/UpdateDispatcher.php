@@ -31,17 +31,44 @@ class UpdateDispatcher
                 return;
             }
 
-            if ($text === '📃 Мої слова' || $text === '/mywords' || str_contains($text, '-')) {
-                (new Handlers\WordHandler())->handle($message);
+            if ($text === '/help') {
+                (new Handlers\StartHandler())->handleHelp($message);
                 return;
             }
 
-            (new Handlers\StartHandler())->handleUnknown($message);
+            // Замість перевірки на '-'
+            // Всі текстові повідомлення передаємо у WordHandler
+            (new Handlers\WordHandler())->handle($message);
             return;
         }
 
         }
 
         // Можна додати обробку callback_query тут
+
+        if (isset($update['callback_query'])) {
+            $callback = $update['callback_query'];
+            $data = $callback['data'];
+            $chatId = $callback['message']['chat']['id'];
+            $messageId = $callback['message']['message_id'];
+
+            if (str_starts_with($data, 'delete_')) {
+                $wordId = str_replace('delete_', '', $data);
+                (new Handlers\WordHandler())->deleteWord($chatId, $wordId, $messageId);
+                return;
+            }
+
+            if (str_starts_with($data, 'edit_')) {
+                $wordId = str_replace('edit_', '', $data);
+                (new Handlers\WordHandler())->promptEditWord($chatId, $wordId);
+                return;
+            }
+
+            if (str_starts_with($data, 'addexample_')) {
+                $wordId = str_replace('addexample_', '', $data);
+                (new Handlers\WordHandler())->promptAddExample($chatId, $wordId);
+                return;
+            }
+        }
     }
 }
